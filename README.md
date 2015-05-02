@@ -2,9 +2,8 @@
 
 [![Tests](https://github.com/philiprehberger/php-retry/actions/workflows/tests.yml/badge.svg)](https://github.com/philiprehberger/php-retry/actions/workflows/tests.yml)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
-[![Total Downloads](https://img.shields.io/packagist/dt/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
-[![PHP Version](https://img.shields.io/packagist/php-v/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
-[![License](https://img.shields.io/packagist/l/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
+[![PHP Version Require](https://img.shields.io/packagist/php-v/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
+[![License](https://img.shields.io/github/license/philiprehberger/php-retry)](LICENSE)
 
 Composable retry utility with exponential backoff, jitter, and exception filtering.
 
