@@ -1,7 +1,9 @@
 {
     "name": "philiprehberger/php-retry",
     "description": "Composable retry utility with exponential backoff, jitter, and exception filtering",
+    "type": "library",
     "keywords": ["retry", "backoff", "exponential", "jitter", "resilience"],
+    "homepage": "https://github.com/philiprehberger/php-retry",
     "license": "MIT",
     "authors": [
         {
@@ -29,6 +31,11 @@
     },
     "config": {
         "sort-packages": true
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "lint": "vendor/bin/pint",
+        "analyse": "vendor/bin/phpstan analyse"
     },
     "minimum-stability": "dev",
     "prefer-stable": true
