@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-16
+
+### Added
+- `shouldRetry(callable)` for predicate-based retry decisions
+- `retryOnlyOn(string ...$exceptionClasses)` for exception type filtering
+- `getAttempts()` to retrieve total attempt count after execution
+
 ## [1.0.2] - 2026-03-16
 
 ### Changed

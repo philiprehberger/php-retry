@@ -23,6 +23,9 @@ final class PendingRetry
     /** @var list<class-string<Throwable>> */
     private array $exceptClasses = [];
 
+    /** @var callable(Throwable, int): bool|null */
+    private mixed $shouldRetryPredicate = null;
+
     private ?int $maxDurationMs = null;
 
     /** @var callable|null */
@@ -30,6 +33,8 @@ final class PendingRetry
 
     /** @var callable|null */
     private mixed $afterRetryCallback = null;
+
+    private int $attemptsMade = 0;
 
     /**
      * Create a new pending retry instance.
@@ -164,6 +169,55 @@ final class PendingRetry
     }
 
     /**
+     * Set a predicate that determines whether to retry after a failure.
+     *
+     * The callable receives the thrown exception and the current attempt number (1-based).
+     * Return true to continue retrying, or false to stop immediately and rethrow.
+     *
+     * @param  callable(Throwable, int): bool  $predicate  A function that decides whether to retry.
+     * @return static The current instance for fluent chaining.
+     */
+    public function shouldRetry(callable $predicate): static
+    {
+        $this->shouldRetryPredicate = $predicate;
+
+        return $this;
+    }
+
+    /**
+     * Only retry when the thrown exception is an instance of one of the given classes.
+     *
+     * This is sugar for shouldRetry() with an instanceof check.
+     *
+     * @param  class-string<Throwable>  ...$exceptionClasses  Exception class names that should trigger a retry.
+     * @return static The current instance for fluent chaining.
+     */
+    public function retryOnlyOn(string ...$exceptionClasses): static
+    {
+        return $this->shouldRetry(function (Throwable $e) use ($exceptionClasses): bool {
+            foreach ($exceptionClasses as $class) {
+                if ($e instanceof $class) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    /**
+     * Get the total number of attempts made during the last execution.
+     *
+     * Returns 0 if run() has not been called yet.
+     *
+     * @return int The total attempt count.
+     */
+    public function getAttempts(): int
+    {
+        return $this->attemptsMade;
+    }
+
+    /**
      * Execute the operation with the configured retry logic.
      *
      * @param  callable(): mixed  $operation  The operation to attempt.
@@ -177,6 +231,7 @@ final class PendingRetry
         $startTime = hrtime(true);
         $lastException = null;
         $attempt = 0;
+        $this->attemptsMade = 0;
 
         while ($attempt < $this->maxAttempts) {
             $attempt++;
@@ -185,6 +240,7 @@ final class PendingRetry
                 $elapsedMs = (hrtime(true) - $startTime) / 1_000_000;
 
                 if ($elapsedMs >= $this->maxDurationMs) {
+                    $this->attemptsMade = $attempt - 1;
                     throw new RetriesExhaustedException($attempt - 1, $lastException);
                 }
             }
@@ -192,6 +248,7 @@ final class PendingRetry
             try {
                 $result = $operation();
 
+                $this->attemptsMade = $attempt;
                 $totalTimeMs = (hrtime(true) - $startTime) / 1_000_000;
 
                 if ($this->afterRetryCallback !== null && $attempt > 1) {
@@ -205,12 +262,17 @@ final class PendingRetry
                 );
             } catch (Throwable $e) {
                 $lastException = $e;
+                $this->attemptsMade = $attempt;
 
                 if ($this->afterRetryCallback !== null) {
                     ($this->afterRetryCallback)($attempt, $e);
                 }
 
-                if (! $this->shouldRetry($e)) {
+                if (! $this->isRetryable($e)) {
+                    throw $e;
+                }
+
+                if ($this->shouldRetryPredicate !== null && ! ($this->shouldRetryPredicate)($e, $attempt)) {
                     throw $e;
                 }
 
@@ -226,13 +288,14 @@ final class PendingRetry
             }
         }
 
+        $this->attemptsMade = $attempt;
         throw new RetriesExhaustedException($attempt, $lastException);
     }
 
     /**
      * Determine whether the given exception should trigger a retry.
      */
-    private function shouldRetry(Throwable $e): bool
+    private function isRetryable(Throwable $e): bool
     {
         foreach ($this->exceptClasses as $class) {
             if ($e instanceof $class) {
