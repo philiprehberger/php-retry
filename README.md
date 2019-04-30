@@ -147,6 +147,29 @@ $result = Retry::times(5)
     ->run(fn () => $api->request());
 ```
 
+### Success callback
+
+```php
+$result = Retry::times(5)
+    ->backoff(baseMs: 100)
+    ->onSuccess(function (RetryResult $r) {
+        logger()->info("Succeeded after {$r->attempts} attempt(s)");
+    })
+    ->run(fn () => $api->request());
+```
+
+### Checking retry status
+
+```php
+$result = Retry::times(3)->run(fn () => $service->call());
+
+if ($result->wasRetried()) {
+    logger()->warning("Operation required retries: {$result->attempts} attempts");
+}
+
+echo $result->totalDuration(); // Total elapsed time in milliseconds
+```
+
 ## API
 
 | Method | Description |
@@ -165,7 +188,10 @@ $result = Retry::times(5)
 | `->maxDuration(int $ms)` | Set maximum total duration for all attempts |
 | `->beforeRetry(callable $callback)` | Callback invoked before each retry |
 | `->afterRetry(callable $callback)` | Callback invoked after each attempt |
+| `->onSuccess(callable $callback)` | Callback invoked with `RetryResult` after successful execution |
 | `->run(callable $operation)` | Execute the operation with retry logic |
+| `$result->wasRetried()` | Returns `true` if more than one attempt was made |
+| `$result->totalDuration()` | Total elapsed time across all attempts in milliseconds |
 
 ## Development
 

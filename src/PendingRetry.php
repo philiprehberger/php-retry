@@ -34,6 +34,9 @@ final class PendingRetry
     /** @var callable|null */
     private mixed $afterRetryCallback = null;
 
+    /** @var callable|null */
+    private mixed $onSuccessCallback = null;
+
     private int $attemptsMade = 0;
 
     /**
@@ -169,6 +172,19 @@ final class PendingRetry
     }
 
     /**
+     * Register a callback to be invoked after the operation succeeds.
+     *
+     * @param  callable(RetryResult): void  $callback  Receives the RetryResult after successful execution.
+     * @return self The current instance for fluent chaining.
+     */
+    public function onSuccess(callable $callback): self
+    {
+        $this->onSuccessCallback = $callback;
+
+        return $this;
+    }
+
+    /**
      * Set a predicate that determines whether to retry after a failure.
      *
      * The callable receives the thrown exception and the current attempt number (1-based).
@@ -255,11 +271,17 @@ final class PendingRetry
                     ($this->afterRetryCallback)($attempt, null);
                 }
 
-                return new RetryResult(
+                $retryResult = new RetryResult(
                     value: $result,
                     attempts: $attempt,
                     totalTimeMs: $totalTimeMs,
                 );
+
+                if ($this->onSuccessCallback !== null) {
+                    ($this->onSuccessCallback)($retryResult);
+                }
+
+                return $retryResult;
             } catch (Throwable $e) {
                 $lastException = $e;
                 $this->attemptsMade = $attempt;

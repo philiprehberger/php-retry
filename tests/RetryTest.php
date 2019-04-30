@@ -276,4 +276,107 @@ final class RetryTest extends TestCase
         $this->assertSame('outer-inner-value', $result->value);
         $this->assertSame(1, $result->attempts);
     }
+
+    public function test_on_success_fires_after_first_try_success(): void
+    {
+        $captured = null;
+
+        $result = Retry::times(3)
+            ->onSuccess(function (RetryResult $r) use (&$captured) {
+                $captured = $r;
+            })
+            ->run(fn () => 'first-try');
+
+        $this->assertSame('first-try', $result->value);
+        $this->assertNotNull($captured);
+        $this->assertSame('first-try', $captured->value);
+        $this->assertSame(1, $captured->attempts);
+    }
+
+    public function test_on_success_fires_after_retried_success(): void
+    {
+        $captured = null;
+        $counter = 0;
+
+        $result = Retry::times(5)
+            ->constant(0)
+            ->onSuccess(function (RetryResult $r) use (&$captured) {
+                $captured = $r;
+            })
+            ->run(function () use (&$counter) {
+                $counter++;
+                if ($counter < 3) {
+                    throw new RuntimeException('fail');
+                }
+
+                return 'retried-success';
+            });
+
+        $this->assertSame('retried-success', $result->value);
+        $this->assertNotNull($captured);
+        $this->assertSame('retried-success', $captured->value);
+        $this->assertSame(3, $captured->attempts);
+    }
+
+    public function test_on_success_does_not_fire_on_failure(): void
+    {
+        $fired = false;
+
+        try {
+            Retry::times(2)
+                ->constant(0)
+                ->onSuccess(function () use (&$fired) {
+                    $fired = true;
+                })
+                ->run(fn () => throw new RuntimeException('always fails'));
+
+            $this->fail('Expected RetriesExhaustedException');
+        } catch (RetriesExhaustedException) {
+            $this->assertFalse($fired);
+        }
+    }
+
+    public function test_was_retried_returns_false_on_first_attempt(): void
+    {
+        $result = Retry::times(3)->run(fn () => 'ok');
+
+        $this->assertFalse($result->wasRetried());
+    }
+
+    public function test_was_retried_returns_true_after_multiple_attempts(): void
+    {
+        $counter = 0;
+
+        $result = Retry::times(5)
+            ->constant(0)
+            ->run(function () use (&$counter) {
+                $counter++;
+                if ($counter < 3) {
+                    throw new RuntimeException('fail');
+                }
+
+                return 'ok';
+            });
+
+        $this->assertTrue($result->wasRetried());
+    }
+
+    public function test_total_duration_returns_positive_value(): void
+    {
+        $counter = 0;
+
+        $result = Retry::times(3)
+            ->constant(1)
+            ->run(function () use (&$counter) {
+                $counter++;
+                if ($counter < 2) {
+                    throw new RuntimeException('fail');
+                }
+
+                return 'ok';
+            });
+
+        $this->assertGreaterThan(0, $result->totalDuration());
+        $this->assertSame($result->totalTimeMs, $result->totalDuration());
+    }
 }

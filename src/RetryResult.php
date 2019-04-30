@@ -18,4 +18,20 @@ final class RetryResult
         public readonly int $attempts,
         public readonly float $totalTimeMs,
     ) {}
+
+    /**
+     * Determine whether the operation was retried (more than one attempt).
+     */
+    public function wasRetried(): bool
+    {
+        return $this->attempts > 1;
+    }
+
+    /**
+     * Get the total elapsed time across all attempts in milliseconds.
+     */
+    public function totalDuration(): float
+    {
+        return $this->totalTimeMs;
+    }
 }
