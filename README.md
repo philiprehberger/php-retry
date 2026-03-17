@@ -2,7 +2,6 @@
 
 [![Tests](https://github.com/philiprehberger/php-retry/actions/workflows/tests.yml/badge.svg)](https://github.com/philiprehberger/php-retry/actions/workflows/tests.yml)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
-[![PHP Version Require](https://img.shields.io/packagist/php-v/philiprehberger/php-retry.svg)](https://packagist.org/packages/philiprehberger/php-retry)
 [![License](https://img.shields.io/github/license/philiprehberger/php-retry)](LICENSE)
 
 Composable retry utility with exponential backoff, jitter, and exception filtering.
@@ -168,13 +167,15 @@ $result = Retry::times(5)
 | `->afterRetry(callable $callback)` | Callback invoked after each attempt |
 | `->run(callable $operation)` | Execute the operation with retry logic |
 
-## Testing
+## Development
 
 ```bash
 composer install
 vendor/bin/phpunit
+vendor/bin/pint --test
+vendor/bin/phpstan analyse
 ```
 
 ## License
 
-The MIT License (MIT). Please see [LICENSE](LICENSE) for more information.
+MIT
