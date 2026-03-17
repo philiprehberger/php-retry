@@ -78,6 +78,39 @@ $result = Retry::times(5)
     ->run(fn () => $api->submit($data));
 ```
 
+### Conditional Retry
+
+Use `shouldRetry()` to provide a predicate that receives the exception and attempt number:
+
+```php
+$retry = Retry::times(5)
+    ->shouldRetry(function (\Throwable $e, int $attempt): bool {
+        // Stop retrying after attempt 3 for rate-limit errors
+        if ($e instanceof RateLimitException && $attempt >= 3) {
+            return false;
+        }
+        return true;
+    })
+    ->run(fn () => $api->request());
+```
+
+Use `retryOnlyOn()` to retry only for specific exception types:
+
+```php
+$result = Retry::times(5)
+    ->retryOnlyOn(ConnectionException::class, TimeoutException::class)
+    ->run(fn () => $httpClient->get('/endpoint'));
+```
+
+Retrieve the total number of attempts after execution with `getAttempts()`:
+
+```php
+$retry = Retry::times(5);
+$result = $retry->run(fn () => $service->call());
+
+echo $retry->getAttempts(); // e.g. 3
+```
+
 ### Time budget
 
 Stop retrying after a total time budget is exceeded:
@@ -127,6 +160,9 @@ $result = Retry::times(5)
 | `->jitter(bool $enabled)` | Enable or disable jitter |
 | `->onlyIf(callable $predicate)` | Only retry when predicate returns true |
 | `->except(string ...$exceptionClasses)` | Exclude specific exception types from retrying |
+| `->shouldRetry(callable $predicate)` | Predicate receiving exception and attempt number; return false to stop |
+| `->retryOnlyOn(string ...$exceptionClasses)` | Only retry for the given exception types (sugar for `shouldRetry`) |
+| `->getAttempts()` | Get the total number of attempts made after execution |
 | `->maxDuration(int $ms)` | Set maximum total duration for all attempts |
 | `->beforeRetry(callable $callback)` | Callback invoked before each retry |
 | `->afterRetry(callable $callback)` | Callback invoked after each attempt |
