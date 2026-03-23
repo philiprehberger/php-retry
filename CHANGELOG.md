@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-22
+
+### Added
+- `onSuccess(callable $callback)` on `PendingRetry` — callback receives the `RetryResult` after successful execution
+- `wasRetried()` on `RetryResult` — returns true when more than one attempt was made
+- `totalDuration()` on `RetryResult` — returns total elapsed time across all attempts in milliseconds
+
 ## [1.1.1] - 2026-03-17
 
 ### Changed
