@@ -8,9 +8,7 @@ Composable retry utility with exponential backoff, jitter, and exception filteri
 
 ## Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| PHP         | ^8.2    |
+- PHP 8.2+
 
 ## Installation
 
