@@ -12,11 +12,13 @@ final class RetryResult
      * @param  mixed  $value  The value returned by the operation.
      * @param  int  $attempts  The number of attempts made.
      * @param  float  $totalTimeMs  The total time spent retrying in milliseconds.
+     * @param  int  $maxAttempts  The configured maximum number of attempts.
      */
     public function __construct(
         public readonly mixed $value,
         public readonly int $attempts,
         public readonly float $totalTimeMs,
+        public readonly int $maxAttempts = 0,
     ) {}
 
     /**
