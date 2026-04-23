@@ -37,6 +37,9 @@ final class PendingRetry
     /** @var callable|null */
     private mixed $onSuccessCallback = null;
 
+    /** @var callable|null */
+    private mixed $onTimeoutCallback = null;
+
     private int $attemptsMade = 0;
 
     /**
@@ -185,6 +188,30 @@ final class PendingRetry
     }
 
     /**
+     * Register a callback to be invoked when the maxDuration time budget is exceeded.
+     *
+     * The callback receives the most recent exception (or null if no attempt threw)
+     * and is fired immediately before the RetriesExhaustedException is thrown.
+     *
+     * @param  callable(?Throwable): void  $callback  Receives the last exception or null.
+     * @return static The current instance for fluent chaining.
+     */
+    public function onTimeout(callable $callback): static
+    {
+        $this->onTimeoutCallback = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Reset per-run state when this instance is cloned so the clone starts fresh.
+     */
+    public function __clone()
+    {
+        $this->attemptsMade = 0;
+    }
+
+    /**
      * Set a predicate that determines whether to retry after a failure.
      *
      * The callable receives the thrown exception and the current attempt number (1-based).
@@ -257,6 +284,11 @@ final class PendingRetry
 
                 if ($elapsedMs >= $this->maxDurationMs) {
                     $this->attemptsMade = $attempt - 1;
+
+                    if ($this->onTimeoutCallback !== null) {
+                        ($this->onTimeoutCallback)($lastException);
+                    }
+
                     throw new RetriesExhaustedException($attempt - 1, $lastException);
                 }
             }
@@ -275,6 +307,7 @@ final class PendingRetry
                     value: $result,
                     attempts: $attempt,
                     totalTimeMs: $totalTimeMs,
+                    maxAttempts: $this->maxAttempts,
                 );
 
                 if ($this->onSuccessCallback !== null) {

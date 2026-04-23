@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.2] - 2026-03-31
+## [1.2.2] - 2026-04-06
+
+### Added
+- `maxAttempts` readonly property on `RetryResult` exposing the configured attempt cap
+- `onTimeout(callable $callback)` on `PendingRetry` — fires with the last exception (or null) when `maxDuration` is exceeded, before `RetriesExhaustedException` is thrown
+- Clone-safety: `__clone()` resets per-run state so cloned `PendingRetry` instances run independently
 
 ### Changed
 - Standardize README to 3-badge format with emoji Support section
 - Update CI checkout action to v5 for Node.js 24 compatibility
 - Add GitHub issue templates, dependabot config, and PR template
+
+### Fixed
+- Document `backoff()` signature accurately in the README API table (include `$exponential` flag and defaults)
 
 ## [1.2.1] - 2026-03-23
 

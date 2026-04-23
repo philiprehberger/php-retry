@@ -174,7 +174,8 @@ echo $result->totalDuration(); // Total elapsed time in milliseconds
 |--------|-------------|
 | `Retry::times(int $maxAttempts)` | Create a retry builder with a maximum number of attempts |
 | `Retry::forever()` | Create a retry builder that retries indefinitely |
-| `->backoff(bool $exponential, int $baseMs, int $maxMs)` | Configure exponential backoff |
+| `->backoff(bool $exponential = true, int $baseMs = 100, int $maxMs = 10000)` | Configure exponential (or constant when `$exponential = false`) backoff |
+| `->onTimeout(callable $callback)` | Callback invoked with the last exception (or null) when `maxDuration` is exceeded |
 | `->linear(int $delayMs)` | Configure linear backoff |
 | `->constant(int $delayMs)` | Configure constant delay |
 | `->jitter(bool $enabled)` | Enable or disable jitter |

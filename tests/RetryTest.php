@@ -7,6 +7,7 @@ namespace PhilipRehberger\Retry\Tests;
 use InvalidArgumentException;
 use LogicException;
 use PhilipRehberger\Retry\Exceptions\RetriesExhaustedException;
+use PhilipRehberger\Retry\PendingRetry;
 use PhilipRehberger\Retry\Retry;
 use PhilipRehberger\Retry\RetryResult;
 use PHPUnit\Framework\TestCase;
@@ -378,5 +379,70 @@ final class RetryTest extends TestCase
 
         $this->assertGreaterThan(0, $result->totalDuration());
         $this->assertSame($result->totalTimeMs, $result->totalDuration());
+    }
+
+    public function test_retry_result_exposes_max_attempts(): void
+    {
+        $result = Retry::times(7)->run(fn () => 'ok');
+
+        $this->assertSame(7, $result->maxAttempts);
+        $this->assertSame(1, $result->attempts);
+    }
+
+    public function test_retry_result_max_attempts_propagates_after_retries(): void
+    {
+        $counter = 0;
+
+        $result = Retry::times(4)
+            ->constant(0)
+            ->run(function () use (&$counter) {
+                $counter++;
+                if ($counter < 2) {
+                    throw new RuntimeException('fail');
+                }
+
+                return 'ok';
+            });
+
+        $this->assertSame(4, $result->maxAttempts);
+        $this->assertSame(2, $result->attempts);
+    }
+
+    public function test_on_timeout_fires_when_max_duration_exceeded(): void
+    {
+        $captured = null;
+        $fired = false;
+
+        try {
+            Retry::times(1000)
+                ->constant(10)
+                ->maxDuration(30)
+                ->onTimeout(function (?\Throwable $e) use (&$captured, &$fired) {
+                    $fired = true;
+                    $captured = $e;
+                })
+                ->run(fn () => throw new RuntimeException('boom'));
+
+            $this->fail('Expected RetriesExhaustedException');
+        } catch (RetriesExhaustedException) {
+            $this->assertTrue($fired);
+            $this->assertInstanceOf(RuntimeException::class, $captured);
+            $this->assertSame('boom', $captured->getMessage());
+        }
+    }
+
+    public function test_clone_runs_independently_from_original(): void
+    {
+        $original = Retry::times(3)->constant(0);
+        $clone = clone $original;
+
+        $resultA = $original->run(fn () => 'a');
+        $resultB = $clone->run(fn () => 'b');
+
+        $this->assertSame('a', $resultA->value);
+        $this->assertSame('b', $resultB->value);
+        $this->assertSame(1, $original->getAttempts());
+        $this->assertSame(1, $clone->getAttempts());
+        $this->assertInstanceOf(PendingRetry::class, $clone);
     }
 }
